@@ -1,0 +1,186 @@
+%YAML 1.2
+---
+# https://spec.json5.org/
+name: JSON5
+file_extensions:
+  - json5
+scope: source.json5
+
+contexts:
+  main:
+    - include: comments
+    - include: value
+
+  # -----------------------------------------------------------------------
+  # Comments
+  # -----------------------------------------------------------------------
+
+  comments:
+    - match: (//)(.*)$
+      scope: comment.line.double-slash.json5
+      captures:
+        1: punctuation.definition.comment.json5
+        2: comment.line.double-slash.json5
+    - match: /\*
+      scope: punctuation.definition.comment.begin.json5
+      push:
+        - meta_scope: comment.block.json5
+        - match: \*/
+          scope: punctuation.definition.comment.end.json5
+          pop: true
+
+  # -----------------------------------------------------------------------
+  # Values
+  # -----------------------------------------------------------------------
+
+  value:
+    - include: comments
+    - include: object
+    - include: array
+    - include: string-double
+    - include: string-single
+    - include: number
+    - include: keyword
+
+  # -----------------------------------------------------------------------
+  # Objects
+  # -----------------------------------------------------------------------
+
+  object:
+    - match: \{
+      scope: punctuation.section.mapping.begin.json5
+      push: object-contents
+
+  object-contents:
+    - meta_scope: meta.mapping.json5
+    - match: \}
+      scope: punctuation.section.mapping.end.json5
+      pop: true
+    - include: comments
+    - match: ','
+      scope: punctuation.separator.mapping.pair.json5
+    - match: '"'
+      scope: punctuation.definition.string.begin.json5
+      push: object-key-double
+    - match: "'"
+      scope: punctuation.definition.string.begin.json5
+      push: object-key-single
+    # Unquoted name (ECMAScript IdentifierName)
+    - match: '(?:[a-zA-Z_$\x{80}-\x{ff}]|\\u[0-9a-fA-F]{4})(?:[a-zA-Z0-9_$\x{80}-\x{ff}]|\\u[0-9a-fA-F]{4})*'
+      scope: meta.mapping.key.json5 support.type.property-name.json5
+      push: after-key
+
+  object-key-double:
+    - meta_scope: meta.mapping.key.json5 string.quoted.double.json5
+    - match: '"'
+      scope: punctuation.definition.string.end.json5
+      set: after-key
+    - include: string-escape
+    - include: string-line-continuation
+
+  object-key-single:
+    - meta_scope: meta.mapping.key.json5 string.quoted.single.json5
+    - match: "'"
+      scope: punctuation.definition.string.end.json5
+      set: after-key
+    - include: string-escape
+    - include: string-line-continuation
+
+  after-key:
+    - include: comments
+    - match: ':'
+      scope: punctuation.separator.mapping.key-value.json5
+      set: mapping-value
+
+  mapping-value:
+    - include: comments
+    - match: '(?=[,}\]])'
+      pop: true
+    - include: value
+
+  # -----------------------------------------------------------------------
+  # Arrays
+  # -----------------------------------------------------------------------
+
+  array:
+    - match: \[
+      scope: punctuation.section.sequence.begin.json5
+      push: array-contents
+
+  array-contents:
+    - meta_scope: meta.sequence.json5
+    - match: \]
+      scope: punctuation.section.sequence.end.json5
+      pop: true
+    - include: comments
+    - match: ','
+      scope: punctuation.separator.sequence.json5
+    - include: value
+
+  # -----------------------------------------------------------------------
+  # Strings
+  # -----------------------------------------------------------------------
+
+  string-double:
+    - match: '"'
+      scope: punctuation.definition.string.begin.json5
+      push:
+        - meta_scope: string.quoted.double.json5
+        - match: '"'
+          scope: punctuation.definition.string.end.json5
+          pop: true
+        - include: string-escape
+        - include: string-line-continuation
+
+  string-single:
+    - match: "'"
+      scope: punctuation.definition.string.begin.json5
+      push:
+        - meta_scope: string.quoted.single.json5
+        - match: "'"
+          scope: punctuation.definition.string.end.json5
+          pop: true
+        - include: string-escape
+        - include: string-line-continuation
+
+  # Recognized escape sequences: \', \", \\, \/, \b, \f, \n, \r, \t, \v,
+  # \0, \xHH (2 hex digits), \uHHHH (4 hex digits).
+  # Per spec §5.1, any character other than digits 1-9 after \ is valid.
+  string-escape:
+    - match: '\\(?:x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4}|[^1-9])'
+      scope: constant.character.escape.json5
+
+  # Line continuation: \ immediately before a line terminator (§5.1).
+  string-line-continuation:
+    - match: \\\n
+      scope: constant.character.escape.json5
+    - match: \\\r\n
+      scope: constant.character.escape.json5
+    - match: \\\r
+      scope: constant.character.escape.json5
+
+  # -----------------------------------------------------------------------
+  # Numbers (§6)
+  #
+  # Hexadecimal:   [+-]? 0[xX] [0-9a-fA-F]+
+  # Decimal:       [+-]? ( \d+\.?\d* | \.\d+ ) ([eE][+-]?\d+)?
+  # Special:       [+-]? (Infinity | NaN)
+  # -----------------------------------------------------------------------
+
+  number:
+    - match: '[+-]?0[xX][0-9a-fA-F]+'
+      scope: constant.numeric.hex.json5
+    - match: '[+-]?(?:Infinity|NaN)\b'
+      scope: constant.numeric.json5
+    - match: '[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?'
+      scope: constant.numeric.json5
+
+  # -----------------------------------------------------------------------
+  # Keywords / literals (§2)
+  # -----------------------------------------------------------------------
+
+  keyword:
+    - match: \b(?:true|false)\b
+      scope: constant.language.boolean.json5
+    - match: \bnull\b
+      scope: constant.language.null.json5

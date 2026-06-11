@@ -1,0 +1,42 @@
+// Single-line comment: list of people
+/* Multi-line comment:
+   modified from test.json to cover all JSON5 features */
+[
+    {
+        "name": 'john', // Single-quoted string
+        age: 42, // Unquoted identifier keys
+        "isCustomer": false,
+        "disposition": .75, // Leading decimal point
+        "children": [], // Trailing comma in object
+    },
+    {
+        "name": "james",
+        "age": +35, // Explicit plus sign
+        "isCustomer": true,
+        "memberId": 0xDEADBEEF, // Hexadecimal number
+        "children": [
+            {
+                "name": "linus",
+                "age": 4., // Trailing decimal point
+                "note": "touches \
+grass" // Multi-line string via line continuation
+            },
+            {
+                "name": "sandra",
+                "age": 2,
+                "nickname": "\x53andra \u2764" // \x and \u character escapes
+            }, // Trailing comma in array
+        ]
+    },
+    {
+        "name": "jessica",
+        "age": null,
+        "isCustomer": false,
+        "favoriteNumbers": [
+            // IEEE 754 special values
+            Infinity, +Infinity, -Infinity,
+            NaN, +NaN, -NaN
+        ],
+        "children": []
+    }
+]
